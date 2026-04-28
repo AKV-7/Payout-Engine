@@ -56,7 +56,14 @@ class MerchantDetailView(generics.RetrieveAPIView):
         try:
             return Merchant.objects.get(id=merchant_id)
         except Merchant.DoesNotExist:
-            raise ValidationError({'detail': 'Merchant not found'})
+            # Return helpful error with available merchants
+            merchants = [{'id': str(m.id), 'name': m.name} for m in Merchant.objects.all()[:5]]
+            raise ValidationError({
+                'detail': 'Merchant not found',
+                'merchant_id': merchant_id,
+                'available_merchants': merchants,
+                'hint': 'Run POST /api/v1/debug/merchants/ to seed database'
+            })
 
 
 class TransactionListView(generics.ListAPIView):
