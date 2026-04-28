@@ -4,6 +4,7 @@ from .views import (
     TransactionListView,
     PayoutListCreateView,
     PayoutDetailView,
+    DebugMerchantView,
 )
 
 urlpatterns = [
@@ -11,4 +12,5 @@ urlpatterns = [
     path('transactions/', TransactionListView.as_view(), name='transaction-list'),
     path('payouts/', PayoutListCreateView.as_view(), name='payout-list-create'),
     path('payouts/<uuid:pk>/', PayoutDetailView.as_view(), name='payout-detail'),
+    path('debug/merchants/', DebugMerchantView.as_view(), name='debug-merchants'),
 ]

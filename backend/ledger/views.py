@@ -17,6 +17,31 @@ from .serializers import (
 from .tasks import process_payout
 
 
+class DebugMerchantView(generics.RetrieveAPIView):
+    def get(self, request, *args, **kwargs):
+        count = Merchant.objects.count()
+        merchants = []
+        for m in Merchant.objects.all():
+            merchants.append({
+                'id': str(m.id),
+                'name': m.name,
+                'email': m.email,
+            })
+        return Response({
+            'count': count,
+            'merchants': merchants,
+        })
+
+    def post(self, request, *args, **kwargs):
+        # Simple seed trigger - only works if no merchants exist
+        if Merchant.objects.exists():
+            return Response({'detail': 'Merchants already exist'}, status=status.HTTP_400_BAD_REQUEST)
+        # Call the seed logic
+        from .apps import LedgerConfig
+        LedgerConfig()._auto_seed()
+        return Response({'detail': 'Seed triggered'}, status=status.HTTP_200_OK)
+
+
 class MerchantDetailView(generics.RetrieveAPIView):
     serializer_class = MerchantSerializer
 
