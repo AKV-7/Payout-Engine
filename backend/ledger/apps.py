@@ -51,17 +51,27 @@ class LedgerConfig(AppConfig):
             ]
 
             for data in merchants_data:
-                merchant, created = Merchant.objects.get_or_create(
-                    id=data['id'],
-                    defaults={
-                        'name': data['name'],
-                        'email': data['email']
-                    }
-                )
-                if not created:
-                    merchant.name = data['name']
-                    merchant.email = data['email']
-                    merchant.save()
+                # Try to get by ID first, then by email, then create
+                try:
+                    merchant = Merchant.objects.get(id=data['id'])
+                except Merchant.DoesNotExist:
+                    try:
+                        # Update existing merchant with same email to use correct UUID
+                        merchant = Merchant.objects.get(email=data['email'])
+                        # Delete old merchant and create new one with correct ID
+                        Transaction.objects.filter(merchant=merchant).delete()
+                        merchant.delete()
+                        merchant = Merchant.objects.create(
+                            id=data['id'],
+                            name=data['name'],
+                            email=data['email']
+                        )
+                    except Merchant.DoesNotExist:
+                        merchant = Merchant.objects.create(
+                            id=data['id'],
+                            name=data['name'],
+                            email=data['email']
+                        )
 
                 # Clear existing transactions for clean seed
                 Transaction.objects.filter(merchant=merchant).delete()
