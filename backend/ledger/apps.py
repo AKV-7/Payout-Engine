@@ -20,30 +20,25 @@ class LedgerConfig(AppConfig):
         if LedgerConfig._seeded:
             return
         if 'runserver' in sys.argv or 'gunicorn' in ''.join(sys.argv):
-            self._auto_seed()
+            self._force_seed()
             LedgerConfig._seeded = True
 
-    def _auto_seed(self):
+    def _force_seed(self):
+        """Always delete and re-seed with correct UUIDs."""
         max_retries = 3
         for attempt in range(max_retries):
             try:
                 from .models import Merchant, Transaction
+                import traceback
 
-                # Check if merchants with CORRECT fixed UUIDs exist
-                existing_count = Merchant.objects.filter(
-                    id__in=LedgerConfig.FIXED_UUIDS
-                ).count()
+                print(f"[Auto-seed] Attempt {attempt + 1}: Force seeding merchants...")
 
-                if existing_count == 3:
-                    print("[Auto-seed] Merchants exist with correct UUIDs, skipping.")
-                    return
-
-                print(f"[Auto-seed] Attempt {attempt + 1}: Seeding merchants (existing_count={existing_count})...")
-
-                # Delete all existing merchants and transactions
+                # Delete ALL existing merchants and transactions
                 Merchant.objects.all().delete()
                 Transaction.objects.all().delete()
+                print("[Auto-seed] Cleared existing data.")
 
+                # Create merchants with FIXED UUIDs
                 merchants_data = [
                     {
                         'id': LedgerConfig.FIXED_UUIDS[0],
@@ -80,6 +75,7 @@ class LedgerConfig(AppConfig):
                         name=data['name'],
                         email=data['email']
                     )
+                    print(f"[Auto-seed] Created merchant: {data['name']} ({data['id']})")
 
                     for amount, desc in data['credits']:
                         Transaction.objects.create(
@@ -88,16 +84,14 @@ class LedgerConfig(AppConfig):
                             type=Transaction.CREDIT,
                             description=desc
                         )
-                    print(f"[Auto-seed] Created merchant: {data['name']} ({data['id']})")
 
-                print("[Auto-seed] Done! Seeded 3 merchants with correct UUIDs.")
+                print("[Auto-seed] Done! Seeded 3 merchants with FIXED UUIDs.")
                 return
 
             except Exception as e:
                 print(f"[Auto-seed] Attempt {attempt + 1} failed: {e}")
-                import traceback
                 traceback.print_exc()
                 if attempt < max_retries - 1:
                     time.sleep(2)
                 else:
-                    print("[Auto-seed] All attempts failed.")
+                    print("[Auto-seed] All attempts failed. Check logs!")

@@ -47,7 +47,7 @@ class DebugMerchantView(APIView):
     def post(self, request, *args, **kwargs):
         try:
             from .apps import LedgerConfig
-            LedgerConfig()._auto_seed()
+            LedgerConfig()._force_seed()
             return Response({'detail': 'Seed triggered'}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({
