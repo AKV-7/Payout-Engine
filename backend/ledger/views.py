@@ -17,6 +17,11 @@ from .serializers import (
 from .tasks import process_payout
 
 
+class HealthCheckView(generics.APIView):
+    def get(self, request, *args, **kwargs):
+        return Response({'status': 'ok', 'timestamp': str(timezone.now())})
+
+
 class DebugMerchantView(generics.APIView):
     def get(self, request, *args, **kwargs):
         try:
@@ -64,7 +69,6 @@ class MerchantDetailView(generics.RetrieveAPIView):
         try:
             return Merchant.objects.get(id=merchant_id)
         except Merchant.DoesNotExist:
-            # Return helpful error with available merchants
             merchants = [{'id': str(m.id), 'name': m.name} for m in Merchant.objects.all()[:5]]
             raise ValidationError({
                 'detail': 'Merchant not found',
