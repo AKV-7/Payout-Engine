@@ -5,6 +5,7 @@ from django.utils import timezone
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
+from rest_framework.views import APIView
 from .models import (
     Merchant, Transaction, Payout, IdempotencyRecord,
     get_balance, get_held_balance, hash_payload,
@@ -17,12 +18,12 @@ from .serializers import (
 from .tasks import process_payout
 
 
-class HealthCheckView(generics.APIView):
+class HealthCheckView(APIView):
     def get(self, request, *args, **kwargs):
         return Response({'status': 'ok', 'timestamp': str(timezone.now())})
 
 
-class DebugMerchantView(generics.APIView):
+class DebugMerchantView(APIView):
     def get(self, request, *args, **kwargs):
         try:
             count = Merchant.objects.count()
