@@ -6,15 +6,12 @@ class LedgerConfig(AppConfig):
     name = 'ledger'
 
     def ready(self):
-        import os
-        if os.environ.get('RUN_MAIN') or os.environ.get('GUNICORN_CMD_ARGS'):
-            self._auto_seed()
+        self._auto_seed()
 
     def _auto_seed(self):
         from django.db.utils import OperationalError, ProgrammingError
         try:
             from .models import Merchant, Transaction
-            from django.db import connection
 
             # Check if already seeded
             if Merchant.objects.exists():
@@ -36,10 +33,15 @@ class LedgerConfig(AppConfig):
             ]
 
             for name, email, credits in merchants_data:
+                from django.contrib.auth.hashers import make_password
                 merchant, _ = Merchant.objects.get_or_create(
                     email=email,
                     defaults={'name': name}
                 )
+                if not _:
+                    merchant.name = name
+                    merchant.save()
+
                 for amount, desc in credits:
                     Transaction.objects.get_or_create(
                         merchant=merchant,

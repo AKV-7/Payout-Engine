@@ -26,7 +26,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
-    'ledger',
+    'ledger.apps.LedgerConfig',
     'django_celery_beat',
 ]
 
