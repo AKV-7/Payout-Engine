@@ -14,8 +14,9 @@ class LedgerConfig(AppConfig):
         try:
             from .models import Merchant, Transaction
 
-            # Check if already seeded
-            if Merchant.objects.exists():
+            # Check if already seeded with correct UUIDs
+            expected_id = uuid.UUID('f47ac10b-58cc-4372-a567-0e02b2c3d479')
+            if Merchant.objects.filter(id=expected_id).exists():
                 return
 
             # Fixed UUIDs matching frontend dropdown
