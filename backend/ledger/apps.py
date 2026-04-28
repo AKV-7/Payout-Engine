@@ -7,41 +7,43 @@ import sys
 class LedgerConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'ledger'
-    _seeded = False
 
     # Fixed UUIDs matching frontend dropdown
-    FIXED_UUIDS = [
+    FIXED_UIDS = [
         uuid.UUID('f47ac10b-58cc-4372-a567-0e02b2c3d479'),
         uuid.UUID('a1b2c3d4-e5f6-7890-abcd-ef1234567890'),
         uuid.UUID('5a6b7c8d-9e0f-1234-5678-9abcdef01234'),
     ]
 
     def ready(self):
-        if LedgerConfig._seeded:
-            return
-        if 'runserver' in sys.argv or 'gunicorn' in ''.join(sys.argv):
+        """Run seed on startup - simplified to always run."""
+        if 'runserver' in sys.argv or any('gunicorn' in arg for arg in sys.argv):
             self._force_seed()
-            LedgerConfig._seeded = True
 
     def _force_seed(self):
-        """Always delete and re-seed with correct UUIDs."""
+        """Delete all merchants and re-seed with correct UUIDs."""
         max_retries = 3
         for attempt in range(max_retries):
             try:
                 from .models import Merchant, Transaction
                 import traceback
 
-                print(f"[Auto-seed] Attempt {attempt + 1}: Force seeding merchants...")
+                print(f"[Auto-seed] Attempt {attempt + 1}: Force seeding...")
 
-                # Delete ALL existing merchants and transactions
-                Merchant.objects.all().delete()
+                # Delete ALL existing merchants (this will cascade to transactions)
+                merchant_count = Merchant.objects.count()
+                print(f"[Auto-seed] Found {merchant_count} existing merchants, deleting all...")
+
+                # Delete in correct order to avoid FK issues
                 Transaction.objects.all().delete()
-                print("[Auto-seed] Cleared existing data.")
+                Merchant.objects.all().delete()
+
+                print("[Auto-seed] Cleared existing data, creating new merchants...")
 
                 # Create merchants with FIXED UUIDs
                 merchants_data = [
                     {
-                        'id': LedgerConfig.FIXED_UUIDS[0],
+                        'id': LedgerConfig.FIXED_UIDS[0],
                         'name': 'Rahul Designs',
                         'email': 'rahul@designs.in',
                         'credits': [
@@ -51,7 +53,7 @@ class LedgerConfig(AppConfig):
                         ]
                     },
                     {
-                        'id': LedgerConfig.FIXED_UUIDS[1],
+                        'id': LedgerConfig.FIXED_UIDS[1],
                         'name': 'Priya Tech Solutions',
                         'email': 'priya@tech.in',
                         'credits': [
@@ -59,7 +61,7 @@ class LedgerConfig(AppConfig):
                         ]
                     },
                     {
-                        'id': LedgerConfig.FIXED_UUIDS[2],
+                        'id': LedgerConfig.FIXED_UIDS[2],
                         'name': 'Amit Studio',
                         'email': 'amit@studio.in',
                         'credits': [
