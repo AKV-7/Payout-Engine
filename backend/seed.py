@@ -5,6 +5,7 @@ Run with: python seed.py
 """
 import os
 import django
+import uuid
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "playto.settings")
 django.setup()
@@ -12,73 +13,67 @@ django.setup()
 from ledger.models import Merchant, Transaction
 
 
+# Fixed UUIDs so frontend can use them in dropdown
+MERCHANTS = {
+    "rahul@designs.in": {
+        "id": uuid.UUID("f47ac10b-58cc-4372-a567-0e02b2c3d479"),
+        "name": "Rahul Designs",
+        "credits": [
+            (2500000, "Payment from US client #1"),
+            (1500000, "Payment from UK client #2"),
+            (1000000, "Payment from EU client #3"),
+        ]
+    },
+    "priya@tech.in": {
+        "id": uuid.UUID("a1b2c3d4-e5f6-7890-abcd-ef1234567890"),
+        "name": "Priya Tech Solutions",
+        "credits": [
+            (2500000, "SaaS subscription payment"),
+        ]
+    },
+    "amit@studio.in": {
+        "id": uuid.UUID("5a6b7c8d-9e0f-1234-5678-9abcdef01234"),
+        "name": "Amit Studio",
+        "credits": [
+            (5000000, "Video production advance"),
+            (2500000, "Final delivery payment"),
+        ]
+    },
+}
+
+
 def seed():
     print("Seeding merchants...")
 
-    m1, _ = Merchant.objects.get_or_create(
-        email="rahul@designs.in",
-        defaults={"name": "Rahul Designs"}
-    )
-    m2, _ = Merchant.objects.get_or_create(
-        email="priya@tech.in",
-        defaults={"name": "Priya Tech Solutions"}
-    )
-    m3, _ = Merchant.objects.get_or_create(
-        email="amit@studio.in",
-        defaults={"name": "Amit Studio"}
-    )
+    for email, data in MERCHANTS.items():
+        merchant, created = Merchant.objects.get_or_create(
+            id=data["id"],
+            defaults={"email": email, "name": data["name"]}
+        )
+        if not created:
+            merchant.email = email
+            merchant.name = data["name"]
+            merchant.save()
 
-    # Clear existing transactions for clean seed
-    Transaction.objects.filter(merchant__in=[m1, m2, m3]).delete()
+        # Clear existing transactions for clean seed
+        Transaction.objects.filter(merchant=merchant).delete()
 
-    # Merchant 1: Rahul Designs - 50,000 INR in credits
-    Transaction.objects.create(
-        merchant=m1,
-        amount_paise=25_000_00,
-        type=Transaction.CREDIT,
-        description="Payment from US client #1"
-    )
-    Transaction.objects.create(
-        merchant=m1,
-        amount_paise=15_000_00,
-        type=Transaction.CREDIT,
-        description="Payment from UK client #2"
-    )
-    Transaction.objects.create(
-        merchant=m1,
-        amount_paise=10_000_00,
-        type=Transaction.CREDIT,
-        description="Payment from EU client #3"
-    )
-
-    # Merchant 2: Priya Tech - 25,000 INR in credits
-    Transaction.objects.create(
-        merchant=m2,
-        amount_paise=25_000_00,
-        type=Transaction.CREDIT,
-        description="SaaS subscription payment"
-    )
-
-    # Merchant 3: Amit Studio - 75,000 INR in credits
-    Transaction.objects.create(
-        merchant=m3,
-        amount_paise=50_000_00,
-        type=Transaction.CREDIT,
-        description="Video production advance"
-    )
-    Transaction.objects.create(
-        merchant=m3,
-        amount_paise=25_000_00,
-        type=Transaction.CREDIT,
-        description="Final delivery payment"
-    )
+        # Add credits
+        for amount, desc in data["credits"]:
+            Transaction.objects.create(
+                merchant=merchant,
+                amount_paise=amount,
+                type=Transaction.CREDIT,
+                description=desc
+            )
+        print(f"  {data['name']} ({merchant.id})")
 
     print("\n=== Seeded Merchants ===")
-    for m in [m1, m2, m3]:
+    for email, data in MERCHANTS.items():
         from ledger.models import get_balance
-        bal = get_balance(m.id)
-        print(f"{m.name} ({m.id})")
-        print(f"  Email: {m.email}")
+        bal = get_balance(data["id"])
+        print(f"{data['name']} ({data['id']})")
+        print(f"  Email: {email}")
         print(f"  Balance: INR {bal / 100:,.2f}")
         print()
 
