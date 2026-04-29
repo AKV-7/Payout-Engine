@@ -18,11 +18,14 @@ FIXED_UUIDS = [
 def force_seed():
     print("[Seed Script] Force seeding merchants with correct UUIDs...")
     
-    # Delete ALL existing merchants (cascades to transactions)
-    count = Merchant.objects.count()
-    print(f"[Seed Script] Found {count} existing merchants, deleting all...")
-    Merchant.objects.all().delete()
+    # Delete in correct order: transactions FIRST, then merchants
+    _t_count = Transaction.objects.count()
+    _m_count = Merchant.objects.count()
+    print(f"[Seed Script] Found {_m_count} merchants, {_t_count} transactions, deleting...")
+    
+    # Delete transactions first (avoids protected foreign key error)
     Transaction.objects.all().delete()
+    Merchant.objects.all().delete()
     
     # Create merchants with FIXED UUIDs
     merchants_data = [
