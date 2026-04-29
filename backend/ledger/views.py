@@ -107,6 +107,13 @@ class PayoutListCreateView(generics.ListCreateAPIView):
         return Payout.objects.filter(merchant_id=merchant_id)
 
     def create(self, request, *args, **kwargs):
+        try:
+            return self._create(request, *args, **kwargs)
+        except Exception as e:
+            import traceback
+            return Response({"error": str(e), "traceback": traceback.format_exc()}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def _create(self, request, *args, **kwargs):
         merchant_id = request.headers.get('X-Merchant-ID')
         if not merchant_id:
             return Response(
